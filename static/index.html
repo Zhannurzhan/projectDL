@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ToolScan — AI Recognition</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0e0e0e;
+    --surface:  #161616;
+    --panel:    #1e1e1e;
+    --border:   #2a2a2a;
+    --accent:   #f5a623;
+    --accent2:  #e05c2a;
+    --text:     #e8e8e8;
+    --muted:    #666;
+    --success:  #4caf7d;
+    --danger:   #e05c2a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(245,166,35,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,166,35,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* diagonal accent stripe */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: conic-gradient(from 45deg, var(--accent2) 0deg, transparent 60deg);
+    opacity: 0.04;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  header {
+    position: relative; z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(14,14,14,0.95);
+    backdrop-filter: blur(10px);
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+  .logo-text span { color: var(--accent); }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    text-transform: uppercase;
+  }
+
+  main {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 8vw, 88px);
+    letter-spacing: 4px;
+    line-height: 0.9;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+    -webkit-text-stroke: 1px var(--accent);
+  }
+  .hero p {
+    font-size: 16px;
+    color: var(--muted);
+    font-weight: 300;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .panel {
+    background: var(--surface);
+    padding: 32px;
+  }
+
+  .panel-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-label::before {
+    content: '';
+    display: block;
+    width: 16px; height: 1px;
+    background: var(--accent);
+  }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    aspect-ratio: 1;
+    max-height: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(245,166,35,0.04);
+  }
+  .upload-zone.has-image { border-style: solid; border-color: var(--accent); }
+
+  .upload-zone img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;
+    padding: 12px;
+  }
+
+  .upload-placeholder {
+    text-align: center;
+    pointer-events: none;
+  }
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.3;
+  }
+  .upload-placeholder p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .upload-placeholder strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  input[type="file"] { display: none; }
+
+  .btn-scan {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-scan:hover { background: #fbb94e; }
+  .btn-scan:disabled {
+    background: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+  .btn-scan.loading::after {
+    content: '';
+    position: absolute;
+    left: -100%; top: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 1s infinite;
+  }
+  @keyframes shimmer {
+    to { left: 100%; }
+  }
+
+  /* RESULTS PANEL */
+  .result-empty {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    text-align: center;
+    gap: 12px;
+  }
+  .result-empty .icon { font-size: 48px; opacity: 0.15; }
+  .result-empty p { font-size: 13px; line-height: 1.6; }
+
+  .result-content { display: none; }
+  .result-content.visible { display: block; animation: fadeUp 0.4s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-main {
+    background: var(--panel);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .result-main .conf {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .result-main .tool-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .result-main .price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .result-main .price-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+  }
+  .result-main .price-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .top5-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .top5-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .top5-item {
+    display: grid;
+    grid-template-columns: 20px 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .top5-item:first-child {
+    border-color: var(--accent);
+    background: rgba(245,166,35,0.05);
+  }
+  .top5-item:hover { border-color: var(--accent); }
+
+  .top5-rank {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .top5-item:first-child .top5-rank { color: var(--accent); }
+
+  .top5-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .top5-bar-wrap {
+    width: 80px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .top5-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+  .top5-item:not(:first-child) .top5-bar { background: var(--muted); }
+
+  .top5-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 42px;
+    text-align: right;
+  }
+  .top5-item:first-child .top5-pct { color: var(--accent); }
+
+  /* STATUS BAR */
+  .status-bar {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 10px 48px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  .error-box {
+    background: rgba(224,92,42,0.1);
+    border: 1px solid var(--accent2);
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--accent2);
+    display: none;
+    margin-top: 12px;
+  }
+
+  @media (max-width: 720px) {
+    header { padding: 16px 20px; }
+    main   { padding: 32px 16px; }
+    .workspace { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 52px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔧</div>
+    <div class="logo-text">Tool<span>Scan</span></div>
+  </div>
+  <div class="badge">ResNet50 · 23 Classes · 94.59% Acc</div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-label">AI-Powered Recognition</div>
+    <h1>IDENTIFY<br/><em>ANY TOOL</em></h1>
+    <p>Upload a photo of a construction or hardware tool. Our ResNet50 model will identify it and return the price instantly.</p>
+  </div>
+
+  <div class="workspace">
+    <!-- LEFT: Upload -->
+    <div class="panel">
+      <div class="panel-label">Input Image</div>
+
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-placeholder" id="uploadPlaceholder">
+          <div class="upload-icon">⬆</div>
+          <p><strong>Drop image here</strong><br/>or click to browse<br/><br/>JPG, PNG, WEBP</p>
+        </div>
+        <img id="preview" src="" alt="preview" style="display:none"/>
+      </div>
+      <input type="file" id="fileInput" accept="image/*"/>
+
+      <button class="btn-scan" id="scanBtn" disabled>SCAN TOOL</button>
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="panel">
+      <div class="panel-label">Analysis Result</div>
+
+      <div class="result-empty" id="resultEmpty">
+        <div class="icon">🔍</div>
+        <p>Upload an image and press<br/><strong style="color:var(--accent)">SCAN TOOL</strong> to begin</p>
+      </div>
+
+      <div class="result-content" id="resultContent">
+        <div class="result-main">
+          <div class="conf" id="confLabel"></div>
+          <div class="tool-name" id="toolName"></div>
+          <div class="price-row">
+            <span class="price-label">PRICE</span>
+            <span class="price-value" id="priceValue"></span>
+          </div>
+        </div>
+
+        <div class="top5-label">Top 5 Predictions</div>
+        <div class="top5-list" id="top5List"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="status-bar">
+  <div class="status-dot"></div>
+  <span>MODEL ONLINE</span>
+  <span>·</span>
+  <span id="deviceLabel">DEVICE: —</span>
+  <span>·</span>
+  <span>23 TOOL CATEGORIES</span>
+</div>
+
+<script>
+const uploadZone    = document.getElementById('uploadZone');
+const fileInput     = document.getElementById('fileInput');
+const preview       = document.getElementById('preview');
+const placeholder   = document.getElementById('uploadPlaceholder');
+const scanBtn       = document.getElementById('scanBtn');
+const resultEmpty   = document.getElementById('resultEmpty');
+const resultContent = document.getElementById('resultContent');
+const errorBox      = document.getElementById('errorBox');
+
+let selectedFile = null;
+
+// Load device info
+fetch('/health').then(r => r.json()).then(d => {
+  document.getElementById('deviceLabel').textContent = 'DEVICE: ' + d.device.toUpperCase();
+}).catch(() => {});
+
+// Click to open file
+uploadZone.addEventListener('click', () => fileInput.click());
+
+// Drag & drop
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+function loadFile(file) {
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    placeholder.style.display = 'none';
+    uploadZone.classList.add('has-image');
+    scanBtn.disabled = false;
+    errorBox.style.display = 'none';
+    resultContent.classList.remove('visible');
+    resultEmpty.style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+scanBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+
+  scanBtn.disabled = true;
+  scanBtn.classList.add('loading');
+  scanBtn.textContent = 'SCANNING...';
+  errorBox.style.display = 'none';
+
+  const form = new FormData();
+  form.append('file', selectedFile);
+
+  try {
+    const res  = await fetch('/predict', { method: 'POST', body: form });
+    const data = await res.json();
+
+    if (!data.success) throw new Error(data.detail || 'Prediction failed');
+
+    // Update main result
+    document.getElementById('confLabel').textContent =
+      `CONFIDENCE: ${data.confidence.toFixed(1)}%`;
+    document.getElementById('toolName').textContent = data.predicted;
+    document.getElementById('priceValue').textContent =
+      data.price !== 'N/A' ? `${data.price}` : 'N/A';
+
+    // Top 5 list
+    const list = document.getElementById('top5List');
+    list.innerHTML = '';
+    data.top5.forEach((item, i) => {
+      const el = document.createElement('div');
+      el.className = 'top5-item';
+      el.innerHTML = `
+        <span class="top5-rank">#${item.rank}</span>
+        <span class="top5-name">${item.label}</span>
+        <div class="top5-bar-wrap">
+          <div class="top5-bar" style="width:${item.confidence}%"></div>
+        </div>
+        <span class="top5-pct">${item.confidence.toFixed(1)}%</span>
+      `;
+      list.appendChild(el);
+    });
+
+    resultEmpty.style.display = 'none';
+    resultContent.classList.add('visible');
+
+  } catch(err) {
+    errorBox.textContent = 'Error: ' + err.message;
+    errorBox.style.display = 'block';
+  }
+
+  scanBtn.disabled = false;
+  scanBtn.classList.remove('loading');
+  scanBtn.textContent = 'SCAN TOOL';
+});
+</script>
+</body>
+</html>

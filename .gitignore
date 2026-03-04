@@ -1,0 +1,7 @@
+__pycache__/
+.venv/
+*.pth
+train/
+val/
+test/
+results/plots/

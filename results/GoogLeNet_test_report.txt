@@ -1,0 +1,32 @@
+Model: GoogLeNet
+Test Accuracy: 45.95%
+
+                         precision    recall  f1-score   support
+
+      bopp_packing_tape       0.00      0.00      0.00         1
+             box_cutter       0.33      1.00      0.50         2
+     combination_pliers       1.00      0.50      0.67         2
+combination_pliers_blue       0.00      0.00      0.00         2
+        crescent_wrench       0.00      0.00      0.00         2
+                crowbar       0.25      1.00      0.40         1
+                  darby       0.00      0.00      0.00         1
+      fast_adhesive_kit       1.00      1.00      1.00         2
+  flat_head_screwdriver       1.00      1.00      1.00         2
+                 gloves       1.00      0.50      0.67         2
+                 hammer       0.00      0.00      0.00         1
+               hand_saw       0.00      0.00      0.00         1
+                hatshet       0.00      0.00      0.00         1
+    heard_shaped_trowel       0.00      0.00      0.00         2
+           masking_tape       0.00      0.00      0.00         1
+         masonry_roller       1.00      1.00      1.00         1
+             paintbrush       0.25      0.50      0.33         2
+      polyrethane_float       1.00      1.00      1.00         1
+            pump_pliers       0.00      0.00      0.00         2
+            putty_knife       1.00      0.50      0.67         2
+          rubber_mallet       1.00      1.00      1.00         2
+           tape_measure       0.22      1.00      0.36         2
+              tin_snips       0.00      0.00      0.00         2
+
+               accuracy                           0.46        37
+              macro avg       0.39      0.43      0.37        37
+           weighted avg       0.43      0.46      0.40        37
